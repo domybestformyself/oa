@@ -1,4 +1,4 @@
-package yx.sz.utils;
+package yx.sz.common.util;
 
 public class CommonContants {
    

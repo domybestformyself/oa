@@ -23,7 +23,7 @@ public class LoginController {
         return "login";
     }
 
-    @RequestMapping(name="/loginAjax",produces="application/json; charset=UTF-8")
+    @RequestMapping(value="/loginAjax",produces="application/json; charset=UTF-8")
     @ResponseBody// 异步请求的响应结果
     Map<String, Object> login(@RequestParam("userId") String userId,
                               @RequestParam("passWord") String passWord,

@@ -2583,7 +2583,7 @@ Licensed under the MIT license.
             ctx.save();
             ctx.translate(plotOffset.left, plotOffset.top);
 
-            
+
             ctx.lineWidth = series.bars.lineWidth;
             ctx.strokeStyle = series.color;
 

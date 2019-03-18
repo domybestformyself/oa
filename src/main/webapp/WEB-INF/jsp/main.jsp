@@ -8,7 +8,7 @@
 <%@ include file="/WEB-INF/taglib.jsp"%>
 <link href="${ctx}/css/base.css" rel="stylesheet">
 <link href="${ctx}/css/platform.css" rel="stylesheet">
-<link rel="stylesheet" href="${ctx}/resources/easyUI/easyui.css">
+<link href="${ctx}/resources/easyUI/easyui.css" rel="stylesheet">
 <script type="text/javascript" src="${ctx }/resources/jquery/jquery-1.11.0.min.js"></script>
 <script type="text/javascript" src="${ctx }/resources/jquery/jquery-migrate-1.2.1.min.js"></script>
 <script type="text/javascript" src="${ctx}/resources/easyUI/jquery.easyui.min.js"></script>

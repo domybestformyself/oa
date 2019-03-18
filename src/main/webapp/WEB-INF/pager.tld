@@ -21,7 +21,7 @@
   		<!-- 标签名 -->
   		<name>pager</name>
   		<!-- 标签处理类 -->
-  		<tag-class>org.fkit.common.util.pager.PagerTag</tag-class>
+  		<tag-class>yx.sz.common.util.pager.PagerTag</tag-class>
   		<!-- 设置标签为空 -->
   		<body-content>empty</body-content>
   		
