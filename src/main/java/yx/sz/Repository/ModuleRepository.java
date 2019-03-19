@@ -11,7 +11,7 @@ import java.util.List;
 
 public interface ModuleRepository extends JpaRepository<Module,String> , JpaSpecificationExecutor<Module> {
     @Modifying
-    @Query("delete Module m where m.code like ?1")
+    @Query("delete FROM Module m where m.code like ?1")
     public void setCode(String code) ;
 
     @Query("select m from Module m where m.code like :parentCode and length(m.code) = :sonCodeLen")

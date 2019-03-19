@@ -4,6 +4,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,6 +15,8 @@ import yx.sz.Service.IdentityService;
 import yx.sz.common.util.pager.PageModel;
 import yx.sz.dto.UserModule;
 import yx.sz.pojo.Module;
+import yx.sz.pojo.Popedom;
+import yx.sz.pojo.Role;
 import yx.sz.pojo.User;
 import yx.sz.utils.OaContants;
 import yx.sz.utils.OaException;
@@ -161,23 +165,23 @@ public class IdentityServiceImpl implements IdentityService {
                     if (user != null) {
                         /** 是否传入了姓名来查询  */
                         if (!StringUtils.isEmpty(user.getName())) {
-                            predicates.add(cb.like(root.<String>get("name"), "%" + user.getName() + "%"));
+                            predicates.add(cb.like(root.get("name"), "%" + user.getName() + "%"));
                         }
                         /** 是否传入手机号码了来查询  */
                         if (!StringUtils.isEmpty(user.getPhone())) {
-                            predicates.add(cb.like(root.<String>get("phone"), "%" + user.getPhone() + "%"));
+                            predicates.add(cb.like(root.get("phone"), "%" + user.getPhone() + "%"));
                         }
                         /** 是否传入部门来查询  */
                         if (user.getDept() != null && user.getDept().getId() != null && user.getDept().getId() != 0) {
                             root.join("dept", JoinType.INNER);
-                            Path<Long> d_id = root.get("dept").get("id");
+                            Path<Object> d_id = root.get("dept").get("id");
                             predicates.add(cb.equal(d_id, user.getDept().getId()));
-
                         }
+                        /** 是否传入职位来查询  */
                         if (user.getJob() != null && !StringUtils.isEmpty(user.getJob().getCode())
                                 && !user.getJob().getCode().equals("0")) {
                             root.join("job", JoinType.INNER);
-                            Path<String> j_id = root.get("job").get("code");
+                            Path<Object> j_id = root.get("job").get("code");
                             predicates.add(cb.equal(j_id, user.getJob().getCode()));
                         }
                     }
@@ -228,7 +232,6 @@ public class IdentityServiceImpl implements IdentityService {
 //			// 子节点的编号的长度是父节点编号长度+步长
 //		    // 子节点前几位的编号必须与父节点编码一致
             Page<Module> modulesPager = moduleRepository.findAll(new Specification<Module>() {
-
                 @Override
                 public Predicate toPredicate(Root<Module> root, CriteriaQuery<?> query,
                                              CriteriaBuilder cb) {
@@ -249,15 +252,9 @@ public class IdentityServiceImpl implements IdentityService {
             return sonModules;
         } catch (Exception e) {
             throw new OaException("查询子模块异常", e);
-
         }
     }
 
-    /**
-     * 加载菜单管理功能的tree
-     *
-     * @return
-     */
     @Override
     public List<TreeData> loadAllModuleTrees() {
         try {
@@ -281,6 +278,7 @@ public class IdentityServiceImpl implements IdentityService {
         }
     }
 
+    @Transactional
     @Override
     public void addModule(String parentCode, Module module) {
         try {
@@ -297,19 +295,19 @@ public class IdentityServiceImpl implements IdentityService {
 
     private String getNextSonCode(String parentCode, int codeLen) {
         /** 判断父节点是否为null */
-        parentCode =  parentCode==null?"":parentCode;
+        parentCode = parentCode == null ? "" : parentCode;
         /** 1.查询出当前父节点下的最大儿子节点编号 */
-        String maxSonCode = moduleRepository.findUniqueEntity(parentCode+"%" , parentCode.length()+codeLen);
+        String maxSonCode = moduleRepository.findUniqueEntity(parentCode + "%", parentCode.length() + codeLen);
         String nextSonCode = ""; // 保存最终的下一个儿子节点编号
         /** 4.判断最大儿子节点编号是否存在 ,因为极有可能父节点此时一个子节点都没有 */
-        if(StringUtils.isEmpty(maxSonCode)){
+        if (StringUtils.isEmpty(maxSonCode)) {
             /** 儿子节点编号不存在 */
-            String preSuffix = "" ; // 0 需要拼接多少个0
-            for(int i = 0 ; i < codeLen - 1; i++ ){
-                preSuffix+="0";
+            String preSuffix = ""; // 0 需要拼接多少个0
+            for (int i = 0; i < codeLen - 1; i++) {
+                preSuffix += "0";
             }
-            nextSonCode = parentCode+preSuffix+1;
-        }else{
+            nextSonCode = parentCode + preSuffix + 1;
+        } else {
             /** 儿子节点编号存在  */
             /** 截取出当前儿子节点编号的步长出来  */
             String currentMaxSonCode = maxSonCode.substring(parentCode.length());
@@ -317,15 +315,15 @@ public class IdentityServiceImpl implements IdentityService {
             int maxSonCodeInt = Integer.valueOf(currentMaxSonCode);
             maxSonCodeInt++;
             /** 判断编号是否越界了 */
-            if((maxSonCodeInt+"").length() > codeLen){
+            if ((maxSonCodeInt + "").length() > codeLen) {
                 throw new OaException("编号越界了！");
-            }else{
+            } else {
                 /** 没有越界 */
-                String preSuffix = "" ; // 0 需要拼接多少个0
-                for(int i = 0 ; i< codeLen-(maxSonCodeInt+"").length() ; i++){
-                    preSuffix+="0";
+                String preSuffix = ""; // 0 需要拼接多少个0
+                for (int i = 0; i < codeLen - (maxSonCodeInt + "").length(); i++) {
+                    preSuffix += "0";
                 }
-                nextSonCode = parentCode+preSuffix+maxSonCodeInt;
+                nextSonCode = parentCode + preSuffix + maxSonCodeInt;
             }
         }
         return nextSonCode;
@@ -347,6 +345,57 @@ public class IdentityServiceImpl implements IdentityService {
             return null;
         } catch (Exception e) {
             throw new OaException("查询用户失败了", e);
+        }
+    }
+
+    @Override
+    public List<Module> getModulesByParent(String parentCode) {
+        try {
+            parentCode = parentCode == null ? "" : parentCode;
+            List<Module> sonModules = moduleRepository.findModules(parentCode + "%", parentCode.length() + OaContants.CODE_LEN);
+            for (Module m : sonModules) {
+                if (m.getCreater() != null) m.getCreater().getName();
+                if (m.getModifier() != null) m.getModifier().getName();
+            }
+            return sonModules;
+        } catch (Exception e) {
+            throw new OaException("查询子模块异常", e);
+        }
+    }
+
+    @Override
+    public List<String> getRoleModuleOperasCodes(Role role, String parentCode) {
+        try {
+            List<String> roleModuleOperasCodes = popedomRepository.findByIdAndParentCode(role.getId(), parentCode);
+            return roleModuleOperasCodes;
+        } catch (Exception e) {
+            throw new OaException("查询当前角色在当前模块下拥有的操作权限编号异常", e);
+        }
+    }
+
+    @Transactional
+    @Override
+    public void bindPopedom(String codes, Role role, String parentCode) {
+        try {
+            /** 1.先清空此角色在此模块下的所有操作权限 */
+            popedomRepository.setByIdAndParentCode(role.getId(), parentCode);
+            /** 2.更新新的角色模块权限 */
+            if (!StringUtils.isEmpty(codes)) {
+                Module parent = getModuleByCode(parentCode);
+                /** 添加一些更新的权限 */
+                for (String code : codes.split(",")) {
+                    /** 创建一个权限对象 */
+                    Popedom popedom = new Popedom();
+                    popedom.setRole(role);
+                    popedom.setModule(parent);
+                    popedom.setOpera(getModuleByCode(code));
+                    popedom.setCreateDate(new Date());
+                    popedom.setCreater(UserHolder.getCurrentUser());
+                    popedomRepository.save(popedom);
+                }
+            }
+        } catch (Exception e) {
+            throw new OaException("给角色绑定某个模块的操作权限异常", e);
         }
     }
 
@@ -389,10 +438,186 @@ public class IdentityServiceImpl implements IdentityService {
         }
     }
 
+    @Transactional
+    @Override
+    public void updateModule(Module module) {
+        try {
+            Module sessionModule = moduleRepository.findById(module.getCode()).get();
+            sessionModule.setModifier(UserHolder.getCurrentUser());
+            sessionModule.setModifyDate(new Date());
+            sessionModule.setName(module.getName());
+            sessionModule.setRemark(module.getRemark());
+            sessionModule.setUrl(module.getUrl());
+        } catch (Exception e) {
+            throw new OaException("修改模块异常", e);
+        }
+    }
+
+    @Transactional
+    @Override
+    public void deleteModules(String ids) {
+        if (ids != null) {
+            try {
+                String[] split = ids.split(",");
+                for (String id : split
+                ) {
+                    moduleRepository.setCode(id);
+                }
+            } catch (Exception e) {
+                throw new OaException("批量删除菜单异常", e);
+            }
+        }
+    }
+
+    @Override
+    public List<Role> getRoleByPager(PageModel pageModel) {
+
+        try {
+            // 指定排序参数对象：根据id，进行降序查询
+            Sort sort = new Sort(Sort.Direction.ASC, "id");
+            /**
+             * 封装分页实体
+             * 参数一：pageIndex表示当前查询的第几页(默认从0开始，0表示第一页)
+             * 参数二：表示每页展示多少数据，现在设置每页展示4条数据
+             * 参数三：封装排序对象，根据该对象的参数指定根据id降序查询
+             */
+            Pageable page = PageRequest.of(pageModel.getPageIndex() - 1, pageModel.getPageSize(), sort);
+            Page<Role> rolePager = roleRepository.findAll(page);
+            pageModel.setRecordCount(rolePager.getTotalElements());
+            /** 取每个用户的延迟加载属性 */
+            List<Role> roles = rolePager.getContent();
+            for (Role r : roles) {
+                if (r.getModifier() != null) r.getModifier().getName();
+                if (r.getCreater() != null) r.getCreater().getName();
+            }
+            return roles;
+        } catch (Exception e) {
+            throw new OaException("查询角色异常", e);
+        }
+    }
+
+    /**
+     * 此方法中得到当前用户写死，无法从threadlocal中获得user
+     *
+     * @param role
+     */
+    @Transactional
+    @Override
+    public void addRole(Role role) {
+        //添加角色
+        try {
+            role.setCreateDate(new Date());
+            role.setCreater(userRepository.findById("ligang").get());
+            roleRepository.save(role);
+        } catch (Exception e) {
+            throw new OaException("添加角色异常", e);
+        }
+    }
+
+    @Override
+    public Role getRoleById(Long id) {
+        try {
+            return roleRepository.findById(id).get();
+        } catch (Exception e) {
+            throw new OaException("根据id查询角色异常", e);
+        }
+    }
+
+    @Transactional
+    @Override
+    public void updateRole(Role role) {
+        try {
+            Role r = roleRepository.findById(role.getId()).get();
+            r.setName(role.getName());
+            r.setRemark(role.getRemark());
+            r.setModifier(UserHolder.getCurrentUser());
+            r.setModifyDate(new Date());
+        } catch (Exception e) {
+            throw new OaException("根据id修改角色异常", e);
+        }
+    }
+
+    @SuppressWarnings("serial")
+    @Override
+    public List<User> selectNotRoleUser(Role role, PageModel pageModel) {
+        try {
+            Page<User> usersPager = userRepository.findAll(new Specification<User>() {
+                @Override
+                public Predicate toPredicate(Root<User> root, CriteriaQuery<?> query,
+                                             CriteriaBuilder cb) {
+                    // 本集合用于封装查询条件
+                    List<Predicate> predicates = new ArrayList<Predicate>();
+                    // 先查询出不属于这个角色下的用户
+                    List<String> userId = userRepository.getRolesUsers(role.getId());
+                    predicates.add(root.<String>get("userId").in(userId));
+                    return query.where(predicates.toArray(new Predicate[predicates.size()])).getRestriction();
+                }
+            }, PageRequest.of(pageModel.getPageIndex() - 1, pageModel.getPageSize()));
+            pageModel.setRecordCount(usersPager.getTotalElements());
+            List<User> users = usersPager.getContent();
+            for (User u : users) {
+                if (u.getDept() != null) u.getDept().getName();
+                if (u.getJob() != null) u.getJob().getName();
+                if (u.getChecker() != null) u.getChecker().getName();
+            }
+            return users;
+        } catch (Exception e) {
+            throw new OaException("查询不属于角色下的用户信息异常", e);
+        }
+    }
+
+    @SuppressWarnings("serial")
+    @Override
+    public List<User> selectRoleUser(Role role, PageModel pageModel) {
+        try {
+            Page<User> usersPager = userRepository.findAll(new Specification<User>() {
+                @Override
+                public Predicate toPredicate(Root<User> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
+                    // 本集合用于封装查询条件
+                    List<Predicate> predicates = new ArrayList<>();
+                    List<String> userIds = userRepository.findRoleUsers(role.getId());
+                    predicates.add(root.get("userId").in(userIds));
+                    return query.where(predicates.toArray(new Predicate[predicates.size()])).getRestriction();
+                }
+            }, PageRequest.of(pageModel.getPageIndex() - 1, pageModel.getPageSize()));
+            pageModel.setRecordCount(usersPager.getTotalElements());
+            List<User> users = usersPager.getContent();
+            for (User u : users) {
+                if (u.getDept() != null) u.getDept().getName();
+                if (u.getJob() != null) u.getJob().getName();
+                if (u.getChecker() != null) u.getChecker().getName();
+            }
+            return users;
+        } catch (Exception e) {
+            throw new OaException("查询属于角色下的用户信息异常", e);
+        }
+    }
+
+    @Transactional
+    @Override
+    public void bindUser(Role role, String ids) {
+        try {
+            /** 给角色绑定一批用户 */
+            /** 1.先查询出该角色 */
+            Role session = roleRepository.findById(role.getId()).get();
+            /** 2.给角色的users添加需要绑定的用户 */
+            for (String userId : ids.split(",")) {
+                User user = userRepository.findById(userId).get();
+                session.getUsers().add(user);
+            }
+
+        } catch (Exception e) {
+            throw new OaException("绑定角色下的用户异常", e);
+        }
+    }
+
+    /**
+     * 此方法中得到当前用户写死，无法从threadlocal中获得user
+     */
     public List<UserModule> getUserPopedomModules() {
         try {
             /**查询当前用户的权限模块 ：先查用户所有的角色,再查这些角色拥有的所有权限模块  */
-            List<String> popedomModuleCodes = popedomRepository.getUserPopedomModuleCodes("admin");
+            List<String> popedomModuleCodes = popedomRepository.getUserPopedomModuleCodes("ligang");
             if (popedomModuleCodes != null && popedomModuleCodes.size() > 0) {
 
                 /** 定义一个Map集合用于保存用户的权限模块
@@ -434,6 +659,100 @@ public class IdentityServiceImpl implements IdentityService {
 
         } catch (Exception e) {
             throw new OaException("查询当前用户的权限模块", e);
+        }
+    }
+
+    @Transactional
+    @Override
+    public void unBindUser(Role role, String ids) {
+        try {
+            /** 给角色绑定一批用户 */
+            /** 1.先查询出该角色 */
+            Role session = roleRepository.findById(role.getId()).get();
+            /** 2.给角色的users添加需要绑定的用户 */
+            for (String userId : ids.split(",")) {
+                User user = userRepository.findById(userId).get();
+                session.getUsers().remove(user);
+            }
+
+        } catch (Exception e) {
+            throw new OaException("绑定角色下的用户异常", e);
+        }
+
+    }
+
+    @Transactional
+    @Override
+    public void deleteUserByUserIds(String ids) {
+        try {
+            List<User> users = new ArrayList<User>();
+            for (String id : ids.split(",")) {
+                User user = new User();
+                user.setUserId(id);
+                users.add(user);
+            }
+            userRepository.deleteInBatch(users);
+        } catch (Exception e) {
+            throw new OaException("删除用户信息异常了", e);
+        }
+    }
+
+    @Transactional
+    @Override
+    public void addUser(User user) {
+        try {
+            user.setCreateDate(new Date());
+            user.setCreater(UserHolder.getCurrentUser());
+            userRepository.save(user);
+        } catch (Exception e) {
+            throw new OaException("添加用户信息异常了", e);
+        }
+    }
+
+    @Override
+    public String isUserValidAjax(String userId) {
+        try {
+            User user = userRepository.findById(userId).get();
+            return user == null ? "success" : "error";
+        } catch (Exception e) {
+            throw new OaException("校验用户登录名是否注册异常了", e);
+        }
+    }
+
+    @Transactional
+    @Override
+    public void updateUser(User user) {
+        try {
+            /** 1.持久化修改   */
+            User sessionUser = userRepository.findById(user.getUserId()).get();
+            sessionUser.setModifyDate(new Date());
+            sessionUser.setModifier(UserHolder.getCurrentUser());
+            sessionUser.setPassWord(user.getPassWord());
+            sessionUser.setName(user.getName());
+            sessionUser.setDept(user.getDept());
+            sessionUser.setJob(user.getJob());
+            sessionUser.setEmail(user.getEmail());
+            sessionUser.setSex(user.getSex());
+            sessionUser.setTel(user.getTel());
+            sessionUser.setPhone(user.getPhone());
+            sessionUser.setQuestion(user.getQuestion());
+            sessionUser.setAnswer(user.getAnswer());
+            sessionUser.setQqNum(user.getQqNum());
+        } catch (Exception e) {
+            throw new OaException("修改用户失败了", e);
+        }
+    }
+
+    @Transactional
+    @Override
+    public void activeUser(User user) {
+        try {
+            User sessionUser = userRepository.findById(user.getUserId()).get();
+            sessionUser.setCheckDate(new Date());
+            sessionUser.setChecker(UserHolder.getCurrentUser());
+            sessionUser.setStatus(user.getStatus());
+        } catch (Exception e) {
+            throw new OaException("激活用户失败了", e);
         }
     }
 }

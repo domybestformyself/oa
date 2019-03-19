@@ -66,6 +66,39 @@ public class ModuleController {
     }
 
 
+    @RequestMapping(value="/showUpdateModule")
+    public String showUpdateModule(Module module ,Model model){
+        try {
+            module = identityService.getModuleByCode(module.getCode());
+            model.addAttribute("module", module);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "identity/module/updateModule";
+    }
+
+    @RequestMapping(value="/updateModule")
+    public String updateModule(Module module ,Model model){
+        try {
+            identityService.updateModule(module);
+            model.addAttribute("tip", "修改成功");
+        } catch (Exception e) {
+            model.addAttribute("tip", "修改失败");
+            e.printStackTrace();
+        }
+        return "identity/module/updateModule";
+    }
+    @RequestMapping(value="/deleteModules")
+    public String deleteModules(String ids,Model model){
+        try {
+            identityService.deleteModules(ids);
+            model.addAttribute("tip", "删除成功");
+        } catch (Exception e) {
+            model.addAttribute("tip", "删除失败");
+            e.printStackTrace();
+        }
+        return "forward:/identity/module/getModulesByParent";
+    }
 
 
 }

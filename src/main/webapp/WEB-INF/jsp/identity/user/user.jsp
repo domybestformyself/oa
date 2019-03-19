@@ -187,7 +187,7 @@
    			$("#iframe").attr("src","${ctx}/identity/user/showAddUser");
        });
        
-        var moduleOperasUrls = "${moduleOperasUrls}";
+        /*var moduleOperasUrls = "";
         if(moduleOperasUrls.indexOf("addUser")==-1){
         	$("#addUser").hide();
         }
@@ -202,10 +202,10 @@
         
         if(moduleOperasUrls.indexOf("activeUser")==-1){
         	$("input[id^='checkUser_']").switchbutton('disable')
-        }
+        }*/
         
      });
-     
+
      function updateUser(userId){
     	 $("#divDialog").dialog({
 				title : "修改用户", // 标题
